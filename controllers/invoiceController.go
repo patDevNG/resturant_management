@@ -61,7 +61,7 @@ func GetInvoice() gin.HandlerFunc{
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		var invoiceView InvoiceViewFormat
-		allOrderItems, err : = ItemsByOrder(invoice.Order_id)
+		allOrderItems, err := ItemsByOrder(invoice.Order_id)
 		invoiceView.Order_id = invoice.Order_id
 		invoiceView.Payment_due_date = invoice.Payment_due_date
 		invoice.Payment_method = nil
@@ -90,7 +90,7 @@ func CreateInvoice() gin.HandlerFunc{
 			return
 		}
 
-		err := orderCollection.FindOne(ctx, bson.M{"order_id": invoice.Order_id})
+		err := orderCollection.FindOne(ctx, bson.M{"order_id": invoice.Order_id}).Decode(&order)
 		defer cancel()
 		if err!=nil{
 			msg:="Order not found"
@@ -171,7 +171,7 @@ func UpdateInvoice() gin.HandlerFunc{
 		)
 
 		if err != nil {
-			msg:= fmt.Printf("invoice item update fail")
+			msg:= fmt.Sprintf("invoice item update fail")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
