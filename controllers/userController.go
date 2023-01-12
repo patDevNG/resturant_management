@@ -17,11 +17,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
 func GetUsers() gin.HandlerFunc{
 	return func (c *gin.Context)  {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		var user models.User
+
 		recordPerPage, err := strconv.Atoi((c.Query("recordPerPage")))
 		if err != nil || recordPerPage < 1 {
 			recordPerPage = 10
@@ -32,7 +33,7 @@ func GetUsers() gin.HandlerFunc{
 			page = 1
 		}
 		startIndex := (page-1)* recordPerPage
-        startIndex, indexErr = strconv.Atoi(c.Query("startIndex"))
+        startIndex, err = strconv.Atoi(c.Query("startIndex"))
 
 		matchStage:= bson.D{{"$match", bson.D{{}}}}
 
@@ -64,7 +65,7 @@ func GetUsers() gin.HandlerFunc{
 
 func GetUser() gin.HandlerFunc{
 	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
 		userId := c.Param("user_id")
 		var user models.User
 
@@ -81,7 +82,6 @@ func GetUser() gin.HandlerFunc{
 
 func SignUp() gin.HandlerFunc{
 	return func(c *gin.Context) {
-		var ctx, canel = context.WithTimeout(context.Background(), 100*time.Second)
 		var user models.User
 
 		if err := c.BindJSON(&user); err != nil{
@@ -96,7 +96,7 @@ func SignUp() gin.HandlerFunc{
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{"email":user.Email})
-		defer canel()
+		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while checking email"})
 			return
@@ -108,7 +108,7 @@ func SignUp() gin.HandlerFunc{
 			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while checking phone"})
 			return
 		}
-		defer canel()
+		defer cancel()
 
 		if count> 0 {
 			c.JSON(http.StatusInternalServerError, gin.H{"error":"email or phone already exist"})
@@ -120,7 +120,8 @@ func SignUp() gin.HandlerFunc{
 		user.ID = primitive.NewObjectID()
 		user.User_id = user.ID.Hex()
 
-		token, refreshToken, _ = helpers.GenerateAllTokens(*&user.Email, *&user.First_name, *&user.Last_name, user.User_id)
+		token, refreshToken, _ := helpers.GenerateAllTokens(*&user.Email, *&user.First_name, *&user.Last_name, user.User_id)
+
 
 		user.Token = &token
 		user.Refresh_Token = &refreshToken
@@ -130,7 +131,7 @@ func SignUp() gin.HandlerFunc{
 			msg:=fmt.Sprint("user was no created")
 			c.JSON(http.StatusInternalServerError, gin.H{"error":msg})
 		}
-		defer canel()
+		defer cancel()
 		c.JSON(http.StatusOK, insertRes)
 	}
 }
@@ -158,7 +159,7 @@ func Auth() gin.HandlerFunc{
 			c.JSON(http.StatusInternalServerError, gin.H{"error":msg})
 			return
 		}
-		token, refreshToken, _ = helpers.GenerateAllTokens(*&foundUser.Email, *&foundUser.First_name, *&foundUser.Last_name, *&foundUser.User_id)
+		token, refreshToken, _ := helpers.GenerateAllTokens(*&foundUser.Email, *&foundUser.First_name, *&foundUser.Last_name, *&foundUser.User_id)
 
 		helpers.UpdateAllTokens(token, refreshToken, foundUser.User_id)
 		c.JSON(http.StatusOK, foundUser)
