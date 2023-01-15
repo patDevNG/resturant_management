@@ -28,6 +28,7 @@ func main() {
 	routes.TableRoutes(router)
 	routes.OrderRoutes(router)
 	routes.OrderItemsRoutes(router)
+	routes.EntryRoutes(router)
 
 	router.Run(":" +port)
 }

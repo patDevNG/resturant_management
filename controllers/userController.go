@@ -101,8 +101,8 @@ func SignUp() gin.HandlerFunc{
 			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while checking email"})
 			return
 		}
-		password :=HashPassword(*&user.Password)
-		user.Password = *&password
+		password :=HashPassword(user.Password)
+		user.Password = password
 		count, phoneErr := userCollection.CountDocuments(ctx,bson.M{"phone":user.Phone} )
 		if phoneErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error":"error occured while checking phone"})
